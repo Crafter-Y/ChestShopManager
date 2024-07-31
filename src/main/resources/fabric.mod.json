@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "id": "chestshopmanager",
+  "version": "${version}",
+  "name": "ChestShopManager",
+  "description": "",
+  "authors": [],
+  "contact": {},
+  "license": "MIT",
+  "icon": "assets/chestshopmanager/icon.png",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "de.craftery.chestshopmanager.client.ChestshopmanagerClient"
+    ],
+    "main": [
+      "de.craftery.chestshopmanager.Chestshopmanager"
+    ]
+  },
+  "mixins": [
+    "chestshopmanager.mixins.json",
+    {
+      "config": "chestshopmanager.client.mixins.json",
+      "environment": "client"
+    }
+  ],
+  "depends": {
+    "fabricloader": ">=${loader_version}",
+    "fabric": "*",
+    "minecraft": "${minecraft_version}"
+  }
+}
