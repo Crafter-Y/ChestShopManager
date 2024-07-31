@@ -7,22 +7,14 @@
   "authors": [],
   "contact": {},
   "license": "MIT",
-  "icon": "assets/chestshopmanager/icon.png",
   "environment": "client",
   "entrypoints": {
-    "client": [
-      "de.craftery.chestshopmanager.client.ChestshopmanagerClient"
-    ],
     "main": [
       "de.craftery.chestshopmanager.Chestshopmanager"
     ]
   },
   "mixins": [
-    "chestshopmanager.mixins.json",
-    {
-      "config": "chestshopmanager.client.mixins.json",
-      "environment": "client"
-    }
+    "chestshopmanager.mixins.json"
   ],
   "depends": {
     "fabricloader": ">=${loader_version}",
