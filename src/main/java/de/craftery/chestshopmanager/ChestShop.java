@@ -9,6 +9,9 @@ import lombok.EqualsAndHashCode;
 import org.hibernate.Session;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Data
 @EqualsAndHashCode(callSuper = false)
 @Entity
@@ -55,6 +58,25 @@ public class ChestShop extends BaseDatabaseEntity<ChestShop, Long> {
     @Override
     public Long getIdentifyingColumn() {
         return this.id;
+    }
+
+    public static List<ChestShop> getAll() {
+        return BaseDatabaseEntity.getAll(ChestShop.class);
+    }
+
+    public static List<ChestShop> getByItem(String itemName) {
+        try {
+            @Cleanup Session session = HibernateConfigurator.getSessionFactory().openSession();
+
+            return session.createQuery("FROM ChestShop where lower(item) = :item", ChestShop.class)
+                    .setParameter("item", itemName.toLowerCase())
+                    .getResultList();
+        } catch (NoResultException e) {
+            return new ArrayList<>();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new ArrayList<>();
+        }
     }
 
     public static @Nullable ChestShop getByCoordinate(int x, int y, int z) {
