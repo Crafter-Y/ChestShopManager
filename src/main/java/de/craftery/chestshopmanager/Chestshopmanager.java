@@ -3,6 +3,8 @@ package de.craftery.chestshopmanager;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import de.craftery.chestshopmanager.db.HibernateConfigurator;
 import de.craftery.chestshopmanager.db.TestDatabaseConnection;
+import lombok.Getter;
+import lombok.Setter;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
@@ -14,17 +16,12 @@ import net.minecraft.block.enums.ChestType;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 
-import net.minecraft.command.CommandSource;
-import net.minecraft.command.suggestion.SuggestionProviders;
-import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.text.TextColor;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
 
-import java.math.RoundingMode;
-import java.text.DecimalFormat;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -34,10 +31,11 @@ import java.util.regex.Pattern;
 import static net.fabricmc.fabric.api.client.command.v2.ClientCommandManager.*;
 
 public class Chestshopmanager implements ModInitializer {
+    @Getter
+    private static Chestshopmanager instance;
+
     private static final Pattern BUY_PATTERN = Pattern.compile("^Buy ((\\d+(,?))+) for \\$((\\d+(,?))+)$");
     private static final Pattern SELL_PATTERN = Pattern.compile("^Sell ((\\d+(,?))+) for \\$((\\d+(,?))+)$");
-
-    private static final MutableText PREFIX = Text.literal("[ChestShopManager] ").formatted(Formatting.LIGHT_PURPLE);
 
     private int x = 0;
     private int y = 0;
@@ -54,13 +52,16 @@ public class Chestshopmanager implements ModInitializer {
 
     private int waitingTicks = 0;
 
+    @Setter
     private String selectedShop = null;
+    @Setter
     private long selectedShopId = 0;
 
     private final Set<String> knownItems = new HashSet<>();
 
     @Override
     public void onInitialize() {
+        instance = this;
         new TestDatabaseConnection();
         HibernateConfigurator.addEntity(ChestShop.class);
         HibernateConfigurator.addEntity(Shop.class);
@@ -94,17 +95,7 @@ public class Chestshopmanager implements ModInitializer {
                                             .executes((context) -> {
                                                 String name = StringArgumentType.getString(context, "name");
                                                 String command = StringArgumentType.getString(context, "command");
-                                                Shop shop = Shop.getByName(name);
-
-                                                if (shop == null) {
-                                                    shop = new Shop();
-                                                }
-
-                                                shop.setCommand(command);
-                                                shop.setName(name);
-                                                shop.saveOrUpdate();
-
-                                                context.getSource().sendFeedback(PREFIX.copy().append(Text.literal(" Created Shop " + name + " at " + command)));
+                                                Commands.createShop(context, name, command);
                                                 return 1;
                                             })
                                         )
@@ -114,18 +105,7 @@ public class Chestshopmanager implements ModInitializer {
                                 .then(argument("name", StringArgumentType.word())
                                         .executes(context -> {
                                             String name = StringArgumentType.getString(context, "name");
-                                            Shop shop = Shop.getByName(name);
-
-                                            if (shop == null) {
-                                                context.getSource().sendFeedback(PREFIX.copy().append(Text.literal("This shop does not exist")));
-                                                return 1;
-                                            }
-
-                                            selectedShop = shop.getName();
-                                            selectedShopId = shop.getId();
-
-                                            context.getSource().sendFeedback(PREFIX.copy().append(Text.literal("Shop " + shop.getName() + " (" + shop.getCommand() + ") selected")));
-
+                                            Commands.useShop(context, name);
                                             return 1;
                                         }).suggests((context, builder) -> {
                                             Shop.getAll().stream().map(Shop::getName).forEach(builder::suggest);
@@ -137,36 +117,7 @@ public class Chestshopmanager implements ModInitializer {
                                 .then(argument("item", StringArgumentType.greedyString())
                                         .executes(context -> {
                                             String itemName = StringArgumentType.getString(context, "item");
-
-                                            List<ChestShop> shops = ChestShop.getByItem(itemName).stream().filter(shop -> shop.getBuyPrice() != null).sorted((a,b) -> a.getBuyPrice()/a.getQuantity() > b.getBuyPrice()/b.getQuantity() ? 1 : -1).toList();
-
-                                            if (shops.isEmpty()) {
-                                                context.getSource().sendFeedback(PREFIX.copy().append(Text.literal("No shop for " + itemName + " found")));
-                                                return 1;
-                                            }
-
-                                            context.getSource().sendFeedback(PREFIX.copy().append(Text.literal("Places to buy " + itemName + ":")));
-                                            for (ChestShop shop : shops) {
-                                                Shop sellerShop = Shop.getById(shop.getShopId());
-
-                                                MutableText base = Text.empty();
-
-                                                float pricePerUnit = (float) shop.getBuyPrice() /shop.getQuantity();
-                                                DecimalFormat df = new DecimalFormat("#.###");
-                                                df.setRoundingMode(RoundingMode.CEILING);
-
-                                                base.append(Text.literal(shop.getQuantity() + "x").formatted(Formatting.GREEN));
-                                                base.append(Text.literal(" - ").formatted(Formatting.GRAY));
-                                                base.append(Text.literal("$" + shop.getBuyPrice()).formatted(Formatting.GOLD));
-                                                base.append(Text.literal(" ($" + df.format(pricePerUnit) + "/pc)").formatted(Formatting.GOLD));
-                                                base.append(Text.literal(" - ").formatted(Formatting.GRAY));
-                                                base.append(Text.literal(shop.getOwner()).formatted(Formatting.GRAY));
-
-                                                //Text.literal("[TP]").formatted(Formatting.GREEN).
-
-                                                context.getSource().sendFeedback(base);
-                                            }
-
+                                            Commands.buyItem(context, itemName);
                                             return 1;
                                         }).suggests((context, builder) -> {
                                             for (String item : knownItems) {
@@ -254,7 +205,7 @@ public class Chestshopmanager implements ModInitializer {
         if (player == null) return;
 
         if (selectedShop == null) {
-            player.sendMessage(PREFIX.copy().append(Text.literal("No Shop selected (/shop use <shop>)")));
+            Messages.sendPlayerMessage(player, Messages.NO_SHOP_SELECTED);
             return;
         }
 
@@ -264,24 +215,13 @@ public class Chestshopmanager implements ModInitializer {
             if (selectedShopId != shop.getShopId()) {
                 Shop otherShop = Shop.getById(shop.getShopId());
                 if (otherShop != null) {
-                    player.sendMessage(PREFIX.copy().append(Text.literal("Shop is owned by " + otherShop.getName() + "(" + otherShop.getCommand() + ")")));
+                    Messages.sendPlayerMessage(player, Messages.SHOP_OWNED_BY, otherShop.getName(), otherShop.getCommand());
                     return;
                 }
             }
         } else {
             shop = new ChestShop();
         }
-
-        StringBuilder notifyMessage = new StringBuilder();
-        notifyMessage.append(selectedShop).append(" ").append(qty).append("x ").append(item).append(" (");
-        if (buyPrice != null && sellPrice != null) {
-            notifyMessage.append("B/S)");
-        }else if (buyPrice != null) {
-            notifyMessage.append("B)");
-        } else {
-            notifyMessage.append("S)");
-        }
-        notifyMessage.append(" (").append(stock).append(")");
 
         shop.setX(x);
         shop.setY(y);
@@ -295,6 +235,27 @@ public class Chestshopmanager implements ModInitializer {
         shop.setShopId(selectedShopId);
 
         shop.setFull(stock == invSize);
+
+        StringBuilder notifyMessage = new StringBuilder();
+        notifyMessage.append(selectedShop).append(" ").append(qty).append("x ").append(item).append(" (");
+        if (buyPrice != null && sellPrice != null) {
+            notifyMessage.append("B/S)");
+        }else if (buyPrice != null) {
+            notifyMessage.append("B)");
+        } else {
+            notifyMessage.append("S)");
+        }
+        notifyMessage.append(" (");
+
+        if (shop.isFull()) {
+            notifyMessage.append("full");
+        } else if (stock == 0) {
+            notifyMessage.append("empty");
+        } else {
+            notifyMessage.append(stock);
+        }
+
+        notifyMessage.append(")");
 
         knownItems.add(item);
 
