@@ -4,13 +4,18 @@
   "version": "${version}",
   "name": "ChestShopManager",
   "description": "",
-  "authors": [],
-  "contact": {},
+  "authors": ["Crafter-Y"],
+  "contact": {
+    "email": "mrcrafter.yt1@gmail.com",
+    "homepage": "https://github.com/Crafter-Y/ChestShopManager",
+    "issues": "https://github.com/Crafter-Y/ChestShopManager/issues",
+    "sources": "https://github.com/Crafter-Y/ChestShopManager"
+  },
   "license": "MIT",
   "environment": "client",
   "entrypoints": {
     "main": [
-      "de.craftery.chestshopmanager.Chestshopmanager"
+      "de.craftery.chestshopmanager.ChestShopManager"
     ]
   },
   "mixins": [

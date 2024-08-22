@@ -32,9 +32,9 @@ import java.util.regex.Pattern;
 
 import static net.fabricmc.fabric.api.client.command.v2.ClientCommandManager.*;
 
-public class Chestshopmanager implements ModInitializer {
+public class ChestShopManager implements ModInitializer {
     @Getter
-    private static Chestshopmanager instance;
+    private static ChestShopManager instance;
 
     private static final Pattern BUY_PATTERN = Pattern.compile("^Buy ((\\d+(,?))+) for \\$((\\d+(,?))+)$");
     private static final Pattern SELL_PATTERN = Pattern.compile("^Sell ((\\d+(,?))+) for \\$((\\d+(,?))+)$");

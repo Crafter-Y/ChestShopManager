@@ -70,14 +70,19 @@ processResources {
     }
 }
 
-remapJar {
+build {
     dependsOn(shadowJar)
 }
 
-shadowJar {
-    archiveFileName.set("ChestShopManager-fabric-v${version}-${findProperty('minecraft_version')}.jar")
+remapJar {
+    dependsOn(shadowJar)
+    input = tasks.shadowJar.archiveFile
+    addNestedDependencies = true
     destinationDirectory = file("$rootDir/build")
+    archiveFileName.set("ChestShopManager-fabric-v${version}-${findProperty('minecraft_version')}.jar")
+}
 
+shadowJar {
     configurations = [project.configurations.shadow]
 }
 

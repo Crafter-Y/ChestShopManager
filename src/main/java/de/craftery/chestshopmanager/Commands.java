@@ -46,8 +46,8 @@ public class Commands {
             return;
         }
 
-        Chestshopmanager.getInstance().setSelectedShop(shop.getName());
-        Chestshopmanager.getInstance().setSelectedShopId(shop.getId());
+        ChestShopManager.getInstance().setSelectedShop(shop.getName());
+        ChestShopManager.getInstance().setSelectedShopId(shop.getId());
 
         Messages.sendCommandFeedback(context, Messages.SHOP_SELECTED, shop.getName(), shop.getCommand());
     }
@@ -134,8 +134,8 @@ public class Commands {
         ClientPlayNetworkHandler handler = MinecraftClient.getInstance().getNetworkHandler();
         if (handler == null) return;
 
-        Chestshopmanager.getInstance().setSelectedShop(shop.getName());
-        Chestshopmanager.getInstance().setSelectedShopId(shop.getId());
+        ChestShopManager.getInstance().setSelectedShop(shop.getName());
+        ChestShopManager.getInstance().setSelectedShopId(shop.getId());
 
         handler.sendCommand(shop.getCommand().replace("/", ""));
 
