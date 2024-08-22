@@ -1,5 +1,6 @@
 package de.craftery.chestshopmanager;
 
+import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import de.craftery.chestshopmanager.db.HibernateConfigurator;
 import de.craftery.chestshopmanager.db.TestDatabaseConnection;
@@ -9,6 +10,7 @@ import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents;
+import net.fabricmc.fabric.api.client.message.v1.ClientSendMessageEvents;
 import net.minecraft.block.ChestBlock;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.ChestBlockEntity;
@@ -69,6 +71,7 @@ public class Chestshopmanager implements ModInitializer {
         knownItems.addAll(ChestShop.getAll().stream().map(ChestShop::getItem).distinct().toList());
 
         watchShops();
+        watchWarpUse();
         registerCommands();
 
         ClientTickEvents.START_CLIENT_TICK.register((client) -> {
@@ -126,6 +129,26 @@ public class Chestshopmanager implements ModInitializer {
                                             return builder.buildFuture();
                                         })
                                 )
+                        )
+                        .then(literal("tp")
+                                .then(argument("shopId", IntegerArgumentType.integer(0))
+                                        .executes(context -> {
+                                            Integer shopId = IntegerArgumentType.getInteger(context, "shopId");
+                                            Commands.tp(context, shopId);
+                                            return 1;
+                                        }).suggests((context, builder) -> {
+                                            for (String item : knownItems) {
+                                                builder.suggest(item.toLowerCase());
+                                            }
+                                            return builder.buildFuture();
+                                        })
+                                )
+                        )
+                        .then(literal("deletechest")
+                                .executes(context -> {
+                                    Commands.deleteChest(context);
+                                    return 1;
+                                })
                         )
                 )
         );
@@ -198,6 +221,23 @@ public class Chestshopmanager implements ModInitializer {
                 }
             }
         });
+    }
+
+    private void watchWarpUse() {
+        ClientSendMessageEvents.COMMAND.register((command -> {
+             String[] parts = command.split(" ");
+             if (parts.length >= 2 && parts[0].equalsIgnoreCase("pw")) {
+                 selectedShop = null;
+
+                 List<Shop> possibleShops = Shop.getByCommand("/pw " + parts[1]);
+
+                 if (!possibleShops.isEmpty()) {
+                     Shop shop = possibleShops.get(0);
+                     selectedShop = shop.getName();
+                     selectedShopId = shop.getId();
+                 }
+             }
+        }));
     }
 
     private void saveShop() {

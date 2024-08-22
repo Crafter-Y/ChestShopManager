@@ -60,6 +60,10 @@ public class ChestShop extends BaseDatabaseEntity<ChestShop, Long> {
         return this.id;
     }
 
+    public static @Nullable ChestShop getById(long id) {
+        return BaseDatabaseEntity.getById(ChestShop.class, id);
+    }
+
     public static List<ChestShop> getAll() {
         return BaseDatabaseEntity.getAll(ChestShop.class);
     }

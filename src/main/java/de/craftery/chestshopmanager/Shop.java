@@ -1,11 +1,15 @@
 package de.craftery.chestshopmanager;
 
 import de.craftery.chestshopmanager.db.BaseDatabaseEntity;
+import de.craftery.chestshopmanager.db.HibernateConfigurator;
 import jakarta.persistence.*;
+import lombok.Cleanup;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.hibernate.Session;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Data
@@ -35,6 +39,21 @@ public class Shop extends BaseDatabaseEntity<Shop, Long> {
 
     public static List<Shop> getAll() {
         return BaseDatabaseEntity.getAll(Shop.class);
+    }
+
+    public static List<Shop> getByCommand(String command) {
+        try {
+            @Cleanup Session session = HibernateConfigurator.getSessionFactory().openSession();
+
+            return session.createQuery("FROM Shop where lower(command) = :command", Shop.class)
+                    .setParameter("command", command.toLowerCase())
+                    .getResultList();
+        } catch (NoResultException e) {
+            return new ArrayList<>();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new ArrayList<>();
+        }
     }
 
     @Override

@@ -14,7 +14,9 @@ public enum Messages {
     SHOP_NOT_FOUND("No shop for %0 found", 1),
     BUY_HEADER("Places to buy %0:", 1),
     NO_SHOP_SELECTED("No Shop selected (/cshop use <shop>)", 0),
-    SHOP_OWNED_BY("Shop is owned by %0 (%1)", 2);
+    SHOP_OWNED_BY("Shop is owned by %0 (%1)", 2),
+    NO_SHOP_FOUND("No shop found there", 0),
+    SHOP_DELETED("Shop was deleted successfully", 0);
 
     private final String template;
     private final int args;
